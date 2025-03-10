@@ -1,0 +1,77 @@
+# Data Ingestion Pipeline Configuration
+
+# Spark configuration
+spark:
+  app_name: "DataIngestionPipeline"
+  master: "local[*]"
+  log_level: "WARN"
+  conf:
+    spark.sql.shuffle.partitions: "4"
+    spark.executor.memory: "2g"
+
+# Data ingestion configuration
+ingestion:
+  input_path: "data/raw/sample_data.csv"
+  header: "true"
+  infer_schema: "true"
+  delimiter: ","
+  mode: "PERMISSIVE"
+  options:
+    nullValue: "NULL"
+    dateFormat: "yyyy-MM-dd"
+
+# Data quality checks
+quality_checks:
+  rules:
+    - name: "check_required_fields"
+      type: "not_null"
+      columns:
+        - "id"
+        - "name"
+        - "date"
+      threshold: 1.0
+    
+    - name: "check_unique_id"
+      type: "unique"
+      columns:
+        - "id"
+    
+    - name: "check_date_format"
+      type: "regex_match"
+      column: "date"
+      pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+    
+    - name: "check_value_ranges"
+      type: "value_range"
+      column: "amount"
+      min: 0
+      max: 10000
+
+# Data transformation configuration
+transformation:
+  transformations:
+    - type: "rename_columns"
+      mapping:
+        "id": "record_id"
+        "name": "full_name"
+    
+    - type: "cast_columns"
+      casts:
+        "amount": "double"
+        "date": "date"
+    
+    - type: "add_columns"
+      columns:
+        "processed_date": "current_date()"
+        "amount_category": "CASE WHEN amount < 100 THEN 'low' WHEN amount < 1000 THEN 'medium' ELSE 'high' END"
+    
+    - type: "filter_rows"
+      condition: "amount > 0"
+
+# Output configuration
+output:
+  path: "data/output/processed_data"
+  format: "parquet"
+
+# General settings
+strict_validation: false  # If true, pipeline will fail on validation errors

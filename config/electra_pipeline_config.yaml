@@ -1,0 +1,90 @@
+# Configuration for Electra Charging Stations Pipeline
+
+# Spark configuration
+spark:
+  app_name: "ElectraChargingStationsPipeline"
+  master: "local[*]"
+  log_level: "INFO"
+  conf:
+    spark.sql.shuffle.partitions: "4"
+    spark.executor.memory: "2g"
+
+# Data ingestion configuration
+ingestion:
+  input_path: "/Users/patrickrotzetter/dev/data_ingestion_pipeline/data/raw/bornes-de-recharge-pour-vehicules-electriques-irve-electra.csv"
+  options:
+    header: "true"
+    delimiter: ","
+    mode: "PERMISSIVE"
+    nullValue: "N/A"
+
+# Data quality checks
+quality_checks:
+  rules:
+    - name: "check_required_fields"
+      type: "not_null"
+      columns:
+        - "id_pdc_itinerance"
+        - "nom_station"
+        - "adresse_station"
+        - "puissance_nominale"
+      threshold: 0.95  # Allow 5% missing values
+    
+    - name: "check_unique_id"
+      type: "unique"
+      columns:
+        - "id_pdc_itinerance"
+    
+    - name: "check_date_format"
+      type: "regex_match"
+      column: "date_mise_en_service"
+      pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+    
+    - name: "check_power_range"
+      type: "value_range"
+      column: "puissance_nominale"
+      min: 0
+      max: 500
+
+# Data transformation configuration
+transformation:
+  transformations:
+    - type: "extract_coordinates"
+      source_column: "coordonneesXY"
+      longitude_column: "longitude"
+      latitude_column: "latitude"
+    
+    - type: "cast_columns"
+      casts:
+        "date_mise_en_service": "date"
+        "date_maj": "date"
+        "puissance_nominale": "integer"
+    
+    - type: "add_columns"
+      columns:
+        "processed_timestamp": "current_timestamp()"
+        "power_category": "CASE WHEN puissance_nominale < 50 THEN 'Low' WHEN puissance_nominale < 150 THEN 'Medium' ELSE 'High' END"
+    
+    - type: "extract_city"
+      source_column: "adresse_station"
+      target_column: "city"
+      pattern: "\\d{5}\\s+([\\w-]+)"
+
+# Output configuration
+output:
+  path: "/Users/patrickrotzetter/dev/data_ingestion_pipeline/data/output/electra_processed"
+  format: "parquet"
+
+# Analytics configuration
+analytics:
+  groupby_columns:
+    - "power_category"
+    - "charging_type"
+    - "city"
+  
+  top_n:
+    column: "city"
+    n: 10
+
+# General settings
+strict_validation: false  # If true, pipeline will fail on validation errors
