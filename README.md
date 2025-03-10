@@ -1,5 +1,8 @@
 # Electric Vehicle Charging Stations Data Pipeline
 
+[![Data Ingestion Pipeline CI/CD](https://github.com/username/data_ingestion_pipeline/actions/workflows/main.yml/badge.svg)](https://github.com/username/data_ingestion_pipeline/actions/workflows/main.yml)
+[![Development Pipeline](https://github.com/username/data_ingestion_pipeline/actions/workflows/dev.yml/badge.svg)](https://github.com/username/data_ingestion_pipeline/actions/workflows/dev.yml)
+
 A PySpark-based data ingestion pipeline that processes electric vehicle charging stations data, performs data quality checks, and applies appropriate transformations.
 
 ## Project Overview

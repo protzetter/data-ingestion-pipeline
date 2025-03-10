@@ -1,0 +1,59 @@
+{
+  "family": "data-ingestion-pipeline",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "data-ingestion-container",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/data-ingestion-pipeline:latest",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/data-ingestion-pipeline",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "REGION"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "data",
+          "containerPath": "/app/data",
+          "readOnly": false
+        }
+      ],
+      "portMappings": [
+        {
+          "containerPort": 4040,
+          "hostPort": 4040,
+          "protocol": "tcp"
+        }
+      ],
+      "cpu": 1024,
+      "memory": 2048,
+      "memoryReservation": 1024
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "1024",
+  "memory": "2048",
+  "volumes": [
+    {
+      "name": "data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-XXXXXXXX",
+        "rootDirectory": "/",
+        "transitEncryption": "ENABLED"
+      }
+    }
+  ]
+}
